@@ -100,38 +100,35 @@ class IMUNode(Node):
         Returns:
            IMUNode : self object returned.
         """
-        try:
+        
 
-            # self.get_logger().info(f"Trying to initialize the sensor at {constants.BMI160_ADDR}
-            # on bus {constants.I2C_BUS_ID}")
-            self.sensor = Driver(self._address, self._bus_id)  # Depends on changes to library
+        self.get_logger().info(f"Trying to initialize the sensor at {constants.BMI160_ADDR} on bus {constants.I2C_BUS_ID}")
+        self.sensor = Driver(self._address, self._bus_id)  # Depends on changes to library
 
-            # configure sampling rate and filter
-            self.sensor.set_accel_rate(6)   # 100Hz
-            self.sensor.setAccelDLPFMode(0)
+        # configure sampling rate and filter
+        #The constant variable that this calls actually doesn't work - using whatever default of sensor is
+        #self.sensor.set_accel_rate(6)   # 100Hz
+        self.sensor.setAccelDLPFMode(0)
 
-            # Defining the Range for Accelerometer and Gyroscope
-            self.sensor.setFullScaleAccelRange(definitions.ACCEL_RANGE_4G, constants.ACCEL_RANGE_4G_FLOAT)
-            self.sensor.setFullScaleGyroRange(definitions.GYRO_RANGE_250, constants.GYRO_RANGE_250_FLOAT)
+        # Defining the Range for Accelerometer and Gyroscope
+        self.sensor.setFullScaleAccelRange(definitions.ACCEL_RANGE_4G, constants.ACCEL_RANGE_4G_FLOAT)
+        self.sensor.setFullScaleGyroRange(definitions.GYRO_RANGE_250, constants.GYRO_RANGE_250_FLOAT)
 
-            # Calibrating Accelerometer - assuming that it stands on 'flat ground'.
-            # Gravity points downwards, hence Z should be calibrated to -1.
-            self.sensor.setAccelOffsetEnabled(True)
+        # Calibrating Accelerometer - assuming that it stands on 'flat ground'.
+        # Gravity points downwards, hence Z should be calibrated to -1.
+        self.sensor.setAccelOffsetEnabled(True)
 
-            self.sensor.autoCalibrateXAccelOffset(0)
-            self.sensor.autoCalibrateYAccelOffset(0)
-            self.sensor.autoCalibrateZAccelOffset(-1)
+        self.sensor.autoCalibrateXAccelOffset(0)
+        self.sensor.autoCalibrateYAccelOffset(0)
+        self.sensor.autoCalibrateZAccelOffset(-1)
 
-            # Enable standing still check
-            if self._zero_motion:
-                self.sensor.setZeroMotionDetectionDuration(1)
-                self.sensor.setZeroMotionDetectionThreshold(0x02)
-                self.sensor.setIntZeroMotionEnabled(True)
+        # Enable standing still check
+        if self._zero_motion:
+            self.sensor.setZeroMotionDetectionDuration(1)
+            self.sensor.setZeroMotionDetectionThreshold(0x02)
+            self.sensor.setIntZeroMotionEnabled(True)
 
-        except Exception as ex:
-            self.get_logger().info(f"Failed to create IMU monitor: {ex}")
-            self.observer = None
-            raise ex
+
 
         self.get_logger().info('Initialization and calibration of IMU sensor done.')
 
@@ -159,11 +156,9 @@ class IMUNode(Node):
         self.rate = self.create_rate(self._publish_rate)
 
         while not self.stop_queue.is_set() and rclpy.ok():
-            try:
-                self.publish_imu_message()
-                self.rate.sleep()
-            except Exception as ex:
-                self.get_logger().error(f"Failed to create IMU message: {ex}")
+            self.publish_imu_message()
+            self.rate.sleep()
+
 
     def publish_imu_message(self):
         """Publish the sensor message when we get new data for the slowest sensor(LiDAR).
@@ -192,25 +187,25 @@ class IMUNode(Node):
             gyro = Vector3()
             # swap x and y
             gyro.x = ((data[1] / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                      self.sensor.gyro_range * (math.pi / 180))
+                      self.sensor.getFullScaleGyroRange() * (math.pi / 180))
             # swap x and y
             gyro.y = ((data[0] / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                      self.sensor.gyro_range * (math.pi / 180))
+                      self.sensor.getFullScaleGyroRange() * (math.pi / 180))
             # upside-down
             gyro.z = ((data[2] / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                      self.sensor.gyro_range * (math.pi / 180) * -1.0)
+                      self.sensor.getFullScaleGyroRange() * (math.pi / 180) * -1.0)
 
             # fetch all accel values - return in m/s²
             accel = Vector3()
             # swap x and y
             accel.x = (data[4] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                       self.sensor.accel_range)
+                       self.sensor.getFullScaleAccelRange())
             # swap x and y
             accel.y = (data[3] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                       self.sensor.accel_range)
+                       self.sensor.getFullScaleAccelRange())
             # upside-down
             accel.z = (data[5] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                       self.sensor.accel_range * -1.0)
+                       self.sensor.getFullScaleAccelRange() * -1.0)
 
             imu_msg.angular_velocity = gyro
             imu_msg.angular_velocity_covariance = constants.COVAR_ARRAY_9
