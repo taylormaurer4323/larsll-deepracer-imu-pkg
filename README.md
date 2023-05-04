@@ -1,4 +1,13 @@
 # AWS DeepRacer Inertial Measurement Unit
+# PLEASE READ ---- Taylors Implementation notes
+The IMU bus seems to change on the deepracer sporadically. If this happens things will fail pretty
+quick when trying to talk to it over the driver. To debug you can use the tool 'i2cdetect -y bus_num'. And additionally you can run
+
+```
+>>>python3 python_test.py
+```
+
+If the above gives errors you won't be able to use the IMU. It means you need to change the bus number within the configuraiton file that exists within imu_pkg/imu_pkg/constants.py, the address of 0x68 seems to be consistent. If you change this file, then make sure to re-run colcon build within the imu_pkg directory.
 
 ## Overview
 
