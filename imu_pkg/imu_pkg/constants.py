@@ -1,4 +1,4 @@
-I2C_BUS_ID = 1
+I2C_BUS_ID = 2
 BMI160_ADDR = 0x68
 
 IMU_MSG_TOPIC = "data_raw"
